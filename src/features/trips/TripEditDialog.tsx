@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CountryAutocomplete } from "./CountryAutocomplete";
 import type { Trip } from "@/types/domain";
 import { validateTripForm, type TripFormValues } from "./tripFormValidation";
 
@@ -97,10 +98,10 @@ export function TripEditDialog({ trip, open, onOpenChange, onSubmit }: Props) {
               <Label htmlFor="edit-country">
                 국가<span className="text-destructive"> *</span>
               </Label>
-              <Input
+              <CountryAutocomplete
                 id="edit-country"
                 value={values.country}
-                onChange={(e) => setField("country", e.target.value)}
+                onChange={(value) => setField("country", value)}
                 aria-invalid={!!errors.country}
               />
               {errors.country && <p className="text-sm text-destructive">{errors.country}</p>}

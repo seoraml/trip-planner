@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CountryAutocomplete } from "./CountryAutocomplete";
 import { useCreateTrip } from "./useCreateTrip";
 import type { TripFormValues } from "./tripFormValidation";
 
@@ -74,7 +75,13 @@ export function TripCreatePage() {
               국가
               <RequiredMark />
             </Label>
-            <Input placeholder="예: 일본" {...fieldProps("country")} />
+            <CountryAutocomplete
+              placeholder="예: 일본"
+              value={values.country}
+              onChange={(value) => setField("country", value)}
+              onBlur={() => blurField("country")}
+              aria-invalid={!!errors.country}
+            />
             <FieldError id="country-error" message={errors.country} />
           </div>
           <div className="flex flex-col gap-1.5">

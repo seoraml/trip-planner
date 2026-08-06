@@ -21,7 +21,7 @@ export function HomePage() {
     <main className="mx-auto max-w-5xl p-4 sm:p-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">포포</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">trip-planner</h1>
           <p className="mt-1.5 text-muted-foreground">
             지도에서 장소를 검색하고, 날짜별 일정을 구성하고, URL로 공유하세요.
           </p>

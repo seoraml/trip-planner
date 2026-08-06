@@ -164,7 +164,7 @@ export function TripDetailPage() {
           to="/"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
-          <ArrowLeft className="size-3.5" />포포
+          <ArrowLeft className="size-3.5" />trip-planner
         </Link>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
           <div>
