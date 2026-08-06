@@ -180,15 +180,13 @@ export function AddItineraryItemForm({ places, onSubmit }: Props) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="time">시간</Label>
-          <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="memo">메모</Label>
-          <Input id="memo" value={memo} onChange={(e) => setMemo(e.target.value)} />
-        </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="time">시간</Label>
+        <Input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-36" />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="memo">메모</Label>
+        <Input id="memo" value={memo} onChange={(e) => setMemo(e.target.value)} />
       </div>
 
       {error && (
