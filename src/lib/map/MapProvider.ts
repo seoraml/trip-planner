@@ -11,6 +11,7 @@ export interface MapMarker {
   label?: string;
   category?: PlaceCategory;
   selected?: boolean;
+  order?: number; // 1-indexed visit order within the day, shown on the marker
 }
 
 export interface PlaceSearchResult {

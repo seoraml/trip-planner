@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GripVertical, Pencil, X } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, Pencil, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PLACE_CATEGORY_ICON_STYLES, PLACE_CATEGORY_ICONS } from "@/features/places/placeCategoryStyles";
@@ -47,9 +47,19 @@ export function DayItineraryList({
     setDragId(null);
   }
 
+  // Drag-and-drop only works with a mouse — this button-based move covers
+  // touch devices where `draggable` never fires.
+  function moveItem(index: number, direction: -1 | 1) {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= items.length) return;
+    const ids = items.map((item) => item.id);
+    [ids[index], ids[targetIndex]] = [ids[targetIndex], ids[index]];
+    onReorder(ids);
+  }
+
   return (
     <ul className="flex animate-in fade-in flex-col gap-2 duration-300">
-      {items.map((item) => {
+      {items.map((item, index) => {
         const place = placesById.get(item.placeId);
         const isSelected = item.id === selectedItemId;
         const CategoryIcon = place ? PLACE_CATEGORY_ICONS[place.category] : undefined;
@@ -74,10 +84,33 @@ export function DayItineraryList({
               }
             >
               {!readOnly && (
-                <GripVertical
-                  className="mt-1.5 size-4 shrink-0 cursor-grab text-muted-foreground/50"
-                  aria-hidden="true"
-                />
+                <div className="flex shrink-0 flex-col items-center">
+                  <button
+                    type="button"
+                    aria-label="위로 이동"
+                    disabled={index === 0}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      moveItem(index, -1);
+                    }}
+                    className="rounded p-0.5 text-muted-foreground/50 hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    <ChevronUp className="size-4" />
+                  </button>
+                  <GripVertical className="size-3.5 cursor-grab text-muted-foreground/30" aria-hidden="true" />
+                  <button
+                    type="button"
+                    aria-label="아래로 이동"
+                    disabled={index === items.length - 1}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      moveItem(index, 1);
+                    }}
+                    className="rounded p-0.5 text-muted-foreground/50 hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    <ChevronDown className="size-4" />
+                  </button>
+                </div>
               )}
 
               {CategoryIcon && place && (

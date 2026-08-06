@@ -63,18 +63,20 @@ export function TripDetailPage() {
 
   const markers: MapMarker[] = useMemo(() => {
     if (!activeDay) return [];
-    return activeDay.items.flatMap((item) => {
-      const place = placesById.get(item.placeId);
-      if (!place) return [];
-      const marker: MapMarker = {
-        id: place.id,
-        position: { lat: place.lat, lng: place.lng },
-        label: place.name,
-        category: place.category,
-        selected: place.id === selectedPlaceId,
-      };
-      return [marker];
-    });
+    return activeDay.items
+      .flatMap((item) => {
+        const place = placesById.get(item.placeId);
+        if (!place) return [];
+        const marker: MapMarker = {
+          id: place.id,
+          position: { lat: place.lat, lng: place.lng },
+          label: place.name,
+          category: place.category,
+          selected: place.id === selectedPlaceId,
+        };
+        return [marker];
+      })
+      .map((marker, index) => ({ ...marker, order: index + 1 }));
   }, [activeDay, placesById, selectedPlaceId]);
 
   const polylinePoints = useMemo(() => markers.map((marker) => marker.position), [markers]);

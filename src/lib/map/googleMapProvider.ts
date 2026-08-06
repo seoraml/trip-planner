@@ -15,12 +15,17 @@ export function createGoogleMapProvider(apiKey: string): MapProvider {
 
   const markerIcon = (m: MapMarker): google.maps.Symbol => ({
     path: google.maps.SymbolPath.CIRCLE,
-    scale: m.selected ? 11 : 8,
+    scale: m.selected ? 15 : 12,
     fillColor: m.category ? PLACE_CATEGORY_HEX[m.category] : DEFAULT_MARKER_COLOR,
     fillOpacity: 1,
     strokeColor: m.selected ? SELECTED_STROKE_COLOR : "#ffffff",
     strokeWeight: m.selected ? 3 : 2,
   });
+
+  const markerLabel = (m: MapMarker): google.maps.MarkerLabel | undefined =>
+    m.order
+      ? { text: String(m.order), color: "#ffffff", fontSize: "12px", fontWeight: "700" }
+      : undefined;
 
   return {
     async init(container, opts) {
@@ -76,6 +81,7 @@ export function createGoogleMapProvider(apiKey: string): MapProvider {
           map: activeMap,
           title: m.label,
           icon: markerIcon(m),
+          label: markerLabel(m),
           zIndex: m.selected ? 999 : undefined,
         });
         marker.addListener("click", () => markerClickHandler?.(m.id));
