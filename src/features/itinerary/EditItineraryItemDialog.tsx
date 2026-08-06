@@ -51,7 +51,7 @@ export function EditItineraryItemDialog({ item, place, open, onOpenChange, onSub
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xs">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>일정 수정</DialogTitle>
           <DialogDescription>{place?.name ?? "삭제된 장소"}</DialogDescription>
@@ -60,7 +60,13 @@ export function EditItineraryItemDialog({ item, place, open, onOpenChange, onSub
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="edit-item-time">시간</Label>
-            <Input id="edit-item-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+            <Input
+              id="edit-item-time"
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              className="w-36"
+            />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="edit-item-memo">메모</Label>
