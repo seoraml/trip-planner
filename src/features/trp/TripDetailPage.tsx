@@ -131,7 +131,7 @@ export function TripDetailPage() {
     setSelectedItemId(itemId);
     const item = activeDay?.items.find((i) => i.id === itemId);
     const place = item ? placesById.get(item.placeId) : undefined;
-    if (place) provider?.panTo({ lat: place.lat, lng: place.lng }, 16);
+    if (place) provider?.panTo({ lat: place.lat, lng: place.lng }, 15);
   }
 
   useEffect(() => {
