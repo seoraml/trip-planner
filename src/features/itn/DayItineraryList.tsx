@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp, GripVertical, Pencil, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PLACE_CATEGORY_ICON_STYLES, PLACE_CATEGORY_ICONS } from "@/features/places/placeCategoryStyles";
+import { PLACE_CATEGORY_ICON_STYLES, PLACE_CATEGORY_ICONS } from "@/features/plc/placeCategoryStyles";
 import type { ItineraryItem, Place } from "@/types/domain";
 
 interface Props {

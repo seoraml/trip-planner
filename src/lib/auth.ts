@@ -55,25 +55,76 @@ export function useAnonymousSession() {
   return { status, error };
 }
 
-// For ownership checks (e.g. "is the current viewer the trip owner").
-// Resolves to null while the session isn't ready yet.
-export function useCurrentUserId(): string | null {
-  const [userId, setUserId] = useState<string | null>(null);
+export interface AuthState {
+  userId: string | null;
+  isAnonymous: boolean;
+  email: string | null;
+}
+
+const INITIAL_AUTH_STATE: AuthState = { userId: null, isAnonymous: true, email: null };
+
+function toAuthState(session: Session): AuthState {
+  return {
+    userId: session.user.id,
+    isAnonymous: session.user.is_anonymous ?? true,
+    email: session.user.email ?? null,
+  };
+}
+
+// Reacts to login/logout/link events (not just the initial bootstrap), so the
+// UI updates right after the Google OAuth redirect comes back — no reload needed.
+export function useAuthState(): AuthState {
+  const [state, setState] = useState<AuthState>(INITIAL_AUTH_STATE);
 
   useEffect(() => {
     let cancelled = false;
+
     ensureAnonymousSession()
       .then((session) => {
-        if (!cancelled) setUserId(session.user.id);
+        if (!cancelled) setState(toAuthState(session));
       })
       .catch(() => {
         // useAnonymousSession (mounted once at the app root) surfaces the error UI;
-        // this hook just stays null if the session never became available.
+        // this hook just stays at its initial state if the session never resolves.
       });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!cancelled && session) setState(toAuthState(session));
+    });
+
     return () => {
       cancelled = true;
+      listener.subscription.unsubscribe();
     };
   }, []);
 
-  return userId;
+  return state;
+}
+
+// For ownership checks (e.g. "is the current viewer the trip owner").
+// Resolves to null while the session isn't ready yet.
+export function useCurrentUserId(): string | null {
+  return useAuthState().userId;
+}
+
+// Anonymous session -> upgrades in place (same auth.uid(), existing trips stay
+// owned). Already-real session -> re-authenticates. Redirects the browser to
+// Google; there is no return value, the OAuth callback resolves via
+// onAuthStateChange once the user is back.
+export async function signInWithGoogle(): Promise<void> {
+  const session = await ensureAnonymousSession();
+  const redirectTo = window.location.origin;
+
+  const { error } = session.user.is_anonymous
+    ? await supabase.auth.linkIdentity({ provider: "google", options: { redirectTo } })
+    : await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
+
+  if (error) throw error;
+}
+
+export async function signOut(): Promise<void> {
+  await supabase.auth.signOut();
+  // Simplest reliable reset: let App.tsx's bootstrap create a fresh anonymous
+  // session on reload, rather than hand-rolling post-signout state.
+  window.location.href = "/";
 }

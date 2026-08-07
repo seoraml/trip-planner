@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Trip } from "@/types/domain";
 import { useCurrentUserId } from "@/lib/auth";
-import { getItineraryItemCounts } from "@/features/itinerary/itineraryService";
+import { getItineraryItemCounts } from "@/features/itn/itineraryService";
 import { deleteTrip, getTripsByOwner } from "./tripService";
 
 export function useMyTrips() {

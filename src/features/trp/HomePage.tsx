@@ -1,6 +1,7 @@
 import { Plus } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
+import { AccountMenu } from "@/features/usr/AccountMenu";
 import type { Trip } from "@/types/domain";
 import { useMyTrips } from "./useMyTrips";
 import { TripCard } from "./TripCard";
@@ -26,12 +27,15 @@ export function HomePage() {
             지도에서 장소를 검색하고, 날짜별 일정을 구성하고, URL로 공유하세요.
           </p>
         </div>
-        <Button asChild>
-          <Link to="/trip/new">
-            <Plus />
-            새 여행 만들기
-          </Link>
-        </Button>
+        <div className="flex flex-col items-end gap-2">
+          <AccountMenu />
+          <Button asChild>
+            <Link to="/trip/new">
+              <Plus />
+              새 여행 만들기
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <div className="mt-8">

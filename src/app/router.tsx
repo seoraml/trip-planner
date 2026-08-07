@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router";
-import { HomePage } from "../features/trips/HomePage";
-import { TripCreatePage } from "../features/trips/TripCreatePage";
-import { TripDetailPage } from "../features/trips/TripDetailPage";
+import { HomePage } from "../features/trp/HomePage";
+import { TripCreatePage } from "../features/trp/TripCreatePage";
+import { TripDetailPage } from "../features/trp/TripDetailPage";
 
 export function AppRouter() {
   return (

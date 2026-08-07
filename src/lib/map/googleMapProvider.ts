@@ -1,4 +1,4 @@
-import { PLACE_CATEGORY_HEX } from "@/features/places/placeCategoryStyles";
+import { PLACE_CATEGORY_HEX } from "@/features/plc/placeCategoryStyles";
 import type { LatLng, MapMarker, MapProvider, PlaceSearchResult } from "./MapProvider";
 import { loadGoogleMaps } from "./loadGoogleMaps";
 

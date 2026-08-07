@@ -1,5 +1,5 @@
 import type { ItineraryItem, Place, TripDay } from "@/types/domain";
-import type { NewPlaceInput } from "@/features/places/placeService";
+import type { NewPlaceInput } from "@/features/plc/placeService";
 import type { NewItineraryItemInput } from "./itineraryService";
 import { AddItineraryItemForm, type AddItineraryItemSubmit } from "./AddItineraryItemForm";
 import { DayItineraryList } from "./DayItineraryList";

@@ -6,18 +6,19 @@ import { useCurrentUserId } from "@/lib/auth";
 import { createGoogleMapProvider } from "@/lib/map/googleMapProvider";
 import { isGoogleMapsConfigured, googleMapsApiKey } from "@/lib/map/googleConfig";
 import type { MapMarker, MapProvider, PlaceSearchResult } from "@/lib/map/MapProvider";
-import { usePlaces } from "@/features/places/usePlaces";
-import { MapView } from "@/features/places/MapView";
-import { PlaceSearchPanel } from "@/features/places/PlaceSearchPanel";
-import { ItineraryPanel } from "@/features/itinerary/ItineraryPanel";
-import { EditItineraryItemDialog } from "@/features/itinerary/EditItineraryItemDialog";
-import { useItinerary } from "@/features/itinerary/useItinerary";
+import { usePlaces } from "@/features/plc/usePlaces";
+import { MapView } from "@/features/plc/MapView";
+import { PlaceSearchPanel } from "@/features/plc/PlaceSearchPanel";
+import { ItineraryPanel } from "@/features/itn/ItineraryPanel";
+import { EditItineraryItemDialog } from "@/features/itn/EditItineraryItemDialog";
+import { useItinerary } from "@/features/itn/useItinerary";
 import { useTrip } from "./useTrip";
 import { formatDateRange } from "./formatDateRange";
 import { formatTripDuration } from "./tripDuration";
 import { deleteTrip } from "./tripService";
 import { ShareDialog } from "./ShareDialog";
 import { TripEditDialog } from "./TripEditDialog";
+import { AccountMenu } from "@/features/usr/AccountMenu";
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 }; // 서울시청, 장소가 없을 때 기본 중심
 
@@ -162,12 +163,15 @@ export function TripDetailPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="border-b border-border/60 bg-card/70 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="size-3.5" />trip-planner
-        </Link>
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="size-3.5" />trip-planner
+          </Link>
+          <AccountMenu />
+        </div>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
