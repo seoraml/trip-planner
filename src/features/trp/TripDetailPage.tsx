@@ -58,7 +58,7 @@ export function TripDetailPage() {
   const [activeTab, setActiveTab] = useState<"itinerary" | "budget">("itinerary");
   const [mapReady, setMapReady] = useState(false);
   const [travelModeByDate, setTravelModeByDate] = useState<Record<string, TravelMode>>({});
-  const [routeLegs, setRouteLegs] = useState<RouteLeg[]>([]);
+  const [routeLegs, setRouteLegs] = useState<(RouteLeg | null)[]>([]);
   const [routeError, setRouteError] = useState<string | null>(null);
 
   const [provider] = useState<MapProvider | null>(() =>
@@ -131,7 +131,7 @@ export function TripDetailPage() {
     setSelectedItemId(itemId);
     const item = activeDay?.items.find((i) => i.id === itemId);
     const place = item ? placesById.get(item.placeId) : undefined;
-    if (place) provider?.panTo({ lat: place.lat, lng: place.lng });
+    if (place) provider?.panTo({ lat: place.lat, lng: place.lng }, 16);
   }
 
   useEffect(() => {

@@ -15,7 +15,7 @@ interface Props {
   onEditItem: (itemId: string) => void;
   onDeleteItem: (itemId: string) => void;
   onReorder: (orderedItemIds: string[]) => void;
-  routeLegs?: RouteLeg[];
+  routeLegs?: (RouteLeg | null)[];
 }
 
 export function DayItineraryList({

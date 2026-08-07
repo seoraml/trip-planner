@@ -26,7 +26,7 @@ interface Props {
   onReorderDay: (orderedItemIds: string[]) => void;
   travelMode: TravelMode;
   onChangeTravelMode: (mode: TravelMode) => void;
-  routeLegs: RouteLeg[];
+  routeLegs: (RouteLeg | null)[];
   routeError: string | null;
 }
 

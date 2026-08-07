@@ -17,7 +17,7 @@ export function createGoogleMapProvider(apiKey: string): MapProvider {
   let markers: google.maps.Marker[] = [];
   let placesService: google.maps.places.PlacesService | null = null;
   let directionsService: google.maps.DirectionsService | null = null;
-  let directionsRenderer: google.maps.DirectionsRenderer | null = null;
+  let routeRenderers: google.maps.DirectionsRenderer[] = [];
   let clickListener: google.maps.MapsEventListener | null = null;
   let markerClickHandler: ((markerId: string) => void) | null = null;
 
@@ -110,46 +110,49 @@ export function createGoogleMapProvider(apiKey: string): MapProvider {
     },
 
     async renderRoute(points: LatLng[], mode: TravelMode): Promise<RouteResult | null> {
-      if (!map || points.length < 2) {
-        directionsRenderer?.setMap(null);
-        directionsRenderer = null;
-        return null;
-      }
+      routeRenderers.forEach((renderer) => renderer.setMap(null));
+      routeRenderers = [];
 
+      if (!map || points.length < 2) return null;
       if (!directionsService) directionsService = new google.maps.DirectionsService();
-      if (!directionsRenderer) {
-        directionsRenderer = new google.maps.DirectionsRenderer({
+      const service = directionsService;
+      const activeMap = map;
+
+      // One request per leg (not a single waypoints request) so a single
+      // unroutable leg (e.g. across an ocean) doesn't fail the whole day —
+      // it's just skipped while the rest still show up.
+      const legResults = await Promise.all(
+        points.slice(0, -1).map((origin, index) =>
+          service
+            .route({ origin, destination: points[index + 1], travelMode: google.maps.TravelMode[mode] })
+            .then((result) => result)
+            .catch(() => null)
+        )
+      );
+
+      const legs = legResults.map((result) => {
+        if (!result) return null;
+        const leg = result.routes[0]?.legs[0];
+        if (!leg) return null;
+
+        const renderer = new google.maps.DirectionsRenderer({
           suppressMarkers: true, // we render our own numbered markers
           preserveViewport: true, // don't fight our own panTo/center logic
           polylineOptions: { strokeColor: "#2563EB", strokeOpacity: 0.8, strokeWeight: 4 },
         });
-      }
-      directionsRenderer.setMap(map);
+        renderer.setMap(activeMap);
+        renderer.setDirections(result);
+        routeRenderers.push(renderer);
 
-      const [origin, destination] = [points[0], points[points.length - 1]];
-      const waypoints = points.slice(1, -1).map((position) => ({ location: position, stopover: true }));
-
-      const result = await directionsService.route({
-        origin,
-        destination,
-        waypoints,
-        travelMode: google.maps.TravelMode[mode],
+        return { durationText: leg.duration?.text ?? "", distanceText: leg.distance?.text ?? "" };
       });
 
-      directionsRenderer.setDirections(result);
-
-      const legs = result.routes[0]?.legs ?? [];
-      return {
-        legs: legs.map((leg) => ({
-          durationText: leg.duration?.text ?? "",
-          distanceText: leg.distance?.text ?? "",
-        })),
-      };
+      return { legs };
     },
 
     clearRoute() {
-      directionsRenderer?.setMap(null);
-      directionsRenderer = null;
+      routeRenderers.forEach((renderer) => renderer.setMap(null));
+      routeRenderers = [];
     },
 
     onMapClick(handler: (pos: LatLng) => void) {
@@ -163,15 +166,16 @@ export function createGoogleMapProvider(apiKey: string): MapProvider {
       };
     },
 
-    panTo(pos: LatLng) {
+    panTo(pos: LatLng, zoom?: number) {
       map?.panTo(pos);
+      if (zoom !== undefined) map?.setZoom(zoom);
     },
 
     destroy() {
       markers.forEach((marker) => marker.setMap(null));
       markers = [];
-      directionsRenderer?.setMap(null);
-      directionsRenderer = null;
+      routeRenderers.forEach((renderer) => renderer.setMap(null));
+      routeRenderers = [];
       clickListener?.remove();
       markerClickHandler = null;
       map = null;

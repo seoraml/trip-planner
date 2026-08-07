@@ -28,7 +28,10 @@ export interface RouteLeg {
 }
 
 export interface RouteResult {
-  legs: RouteLeg[]; // legs[i] = travel from points[i] to points[i+1]
+  // legs[i] = travel from points[i] to points[i+1]; null when no route exists
+  // between those two points (e.g. across an ocean) — that leg is just
+  // skipped rather than failing the whole day's route.
+  legs: (RouteLeg | null)[];
 }
 
 export interface MapProvider {
@@ -40,6 +43,6 @@ export interface MapProvider {
   renderRoute(points: LatLng[], mode: TravelMode): Promise<RouteResult | null>; // null if <2 points
   clearRoute(): void;
   onMapClick(handler: (pos: LatLng) => void): () => void;
-  panTo(pos: LatLng): void;
+  panTo(pos: LatLng, zoom?: number): void;
   destroy(): void;
 }
