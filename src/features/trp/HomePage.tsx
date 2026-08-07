@@ -2,9 +2,32 @@ import { Plus } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { AccountMenu } from "@/features/usr/AccountMenu";
+import { useAuthState } from "@/lib/auth";
 import type { Trip } from "@/types/domain";
 import { useMyTrips } from "./useMyTrips";
 import { TripCard } from "./TripCard";
+
+function NewTripButton({ label }: { label: string }) {
+  const { isAnonymous } = useAuthState();
+
+  if (isAnonymous) {
+    return (
+      <Button disabled title="로그인 후 이용 가능">
+        <Plus />
+        {label}
+      </Button>
+    );
+  }
+
+  return (
+    <Button asChild>
+      <Link to="/trip/new">
+        <Plus />
+        {label}
+      </Link>
+    </Button>
+  );
+}
 
 export function HomePage() {
   const { trips, itemCounts, status, error, removeTrip } = useMyTrips();
@@ -29,12 +52,7 @@ export function HomePage() {
         </div>
         <div className="flex flex-col items-end gap-2">
           <AccountMenu />
-          <Button asChild>
-            <Link to="/trip/new">
-              <Plus />
-              새 여행 만들기
-            </Link>
-          </Button>
+          <NewTripButton label="새 여행 만들기" />
         </div>
       </header>
 
@@ -44,12 +62,7 @@ export function HomePage() {
         {status === "ready" && trips.length === 0 && (
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border py-20 text-center">
             <p className="text-muted-foreground">아직 만든 여행이 없어요.</p>
-            <Button asChild>
-              <Link to="/trip/new">
-                <Plus />
-                첫 여행 만들기
-              </Link>
-            </Button>
+            <NewTripButton label="첫 여행 만들기" />
           </div>
         )}
         {status === "ready" && trips.length > 0 && (

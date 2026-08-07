@@ -39,6 +39,9 @@ function mapTripRowToTrip(row: TripRow): Trip {
 
 export async function createTrip(values: TripFormValues): Promise<Trip> {
   const session = await ensureAnonymousSession();
+  if (session.user.is_anonymous) {
+    throw new Error("여행을 만들려면 먼저 Google로 로그인해주세요.");
+  }
 
   const { data, error } = await supabase
     .from("trips")
