@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, MapPinOff } from "lucide-react";
-import type { LatLng, MapMarker, MapProvider } from "@/lib/map/MapProvider";
+import type { LatLng, MapProvider } from "@/lib/map/MapProvider";
 
 interface Props {
   provider: MapProvider | null;
   center: LatLng;
-  markers: MapMarker[];
-  polylinePoints: LatLng[];
+  onReady?: () => void;
 }
 
-export function MapView({ provider, center, markers, polylinePoints }: Props) {
+export function MapView({ provider, center, onReady }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +20,10 @@ export function MapView({ provider, center, markers, polylinePoints }: Props) {
     provider
       .init(containerRef.current, { center, zoom: 6 })
       .then(() => {
-        if (!cancelled) setStatus("ready");
+        if (!cancelled) {
+          setStatus("ready");
+          onReady?.();
+        }
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -33,15 +35,9 @@ export function MapView({ provider, center, markers, polylinePoints }: Props) {
       cancelled = true;
     };
     // Only re-init when the provider instance itself changes, not on every
-    // center/marker update — those are applied via renderMarkers/panTo below.
+    // center update — marker/route rendering is driven by the parent once ready.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [provider]);
-
-  useEffect(() => {
-    if (status !== "ready" || !provider) return;
-    provider.renderMarkers(markers);
-    provider.renderPolyline(polylinePoints);
-  }, [status, provider, markers, polylinePoints]);
 
   if (!provider) {
     return (

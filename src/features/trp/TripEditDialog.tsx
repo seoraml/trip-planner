@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { ImageIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,11 +16,15 @@ import { CountryAutocomplete } from "./CountryAutocomplete";
 import type { Trip } from "@/types/domain";
 import { validateTripForm, type TripFormValues } from "./tripFormValidation";
 
+const MAX_THUMBNAIL_BYTES = 5 * 1024 * 1024;
+
 interface Props {
   trip: Trip;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: TripFormValues) => Promise<void>;
+  onChangeThumbnail: (file: File) => Promise<void>;
+  onRemoveThumbnail: () => Promise<void>;
 }
 
 function tripToFormValues(trip: Trip): TripFormValues {
@@ -33,11 +38,22 @@ function tripToFormValues(trip: Trip): TripFormValues {
   };
 }
 
-export function TripEditDialog({ trip, open, onOpenChange, onSubmit }: Props) {
+export function TripEditDialog({
+  trip,
+  open,
+  onOpenChange,
+  onSubmit,
+  onChangeThumbnail,
+  onRemoveThumbnail,
+}: Props) {
   const [values, setValues] = useState<TripFormValues>(() => tripToFormValues(trip));
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | undefined>(trip.thumbnailUrl);
+  const [isThumbnailBusy, setIsThumbnailBusy] = useState(false);
+  const [thumbnailError, setThumbnailError] = useState<string | null>(null);
 
   // Reset form to the trip's current values each time the dialog opens.
   useEffect(() => {
@@ -45,8 +61,52 @@ export function TripEditDialog({ trip, open, onOpenChange, onSubmit }: Props) {
       setValues(tripToFormValues(trip));
       setSubmitAttempted(false);
       setSubmitError(null);
+      setThumbnailError(null);
     }
+    setPreviewUrl(trip.thumbnailUrl);
   }, [open, trip]);
+
+  async function handleThumbnailSelect(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setThumbnailError("이미지 파일만 업로드할 수 있어요.");
+      return;
+    }
+    if (file.size > MAX_THUMBNAIL_BYTES) {
+      setThumbnailError("5MB 이하의 이미지만 업로드할 수 있어요.");
+      return;
+    }
+
+    setThumbnailError(null);
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    setIsThumbnailBusy(true);
+    try {
+      await onChangeThumbnail(file);
+    } catch (err) {
+      setPreviewUrl(trip.thumbnailUrl);
+      setThumbnailError(err instanceof Error ? err.message : "사진을 업로드하지 못했습니다.");
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+      setIsThumbnailBusy(false);
+    }
+  }
+
+  async function handleThumbnailRemove() {
+    setThumbnailError(null);
+    setIsThumbnailBusy(true);
+    try {
+      await onRemoveThumbnail();
+      setPreviewUrl(undefined);
+    } catch (err) {
+      setThumbnailError(err instanceof Error ? err.message : "사진을 제거하지 못했습니다.");
+    } finally {
+      setIsThumbnailBusy(false);
+    }
+  }
 
   const errors = submitAttempted ? validateTripForm(values) : {};
 
@@ -80,6 +140,48 @@ export function TripEditDialog({ trip, open, onOpenChange, onSubmit }: Props) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
+          <div className="flex items-center gap-3">
+            <div className="flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+              {previewUrl ? (
+                <img src={previewUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <ImageIcon className="size-5 text-muted-foreground/50" />
+              )}
+            </div>
+            <div className="flex flex-col items-start gap-1">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleThumbnailSelect}
+              />
+              <div className="flex gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isThumbnailBusy}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {isThumbnailBusy ? "처리 중..." : "사진 변경"}
+                </Button>
+                {previewUrl && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={isThumbnailBusy}
+                    onClick={handleThumbnailRemove}
+                  >
+                    제거
+                  </Button>
+                )}
+              </div>
+              {thumbnailError && <p className="text-xs text-destructive">{thumbnailError}</p>}
+            </div>
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="edit-title">
               여행 제목<span className="text-destructive"> *</span>

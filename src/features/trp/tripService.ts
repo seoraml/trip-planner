@@ -12,6 +12,7 @@ interface TripRow {
   start_date: string;
   end_date: string;
   description: string | null;
+  thumbnail_url: string | null;
   is_public: boolean;
   share_slug: string;
   created_at: string;
@@ -28,6 +29,7 @@ function mapTripRowToTrip(row: TripRow): Trip {
     startDate: row.start_date,
     endDate: row.end_date,
     description: row.description ?? undefined,
+    thumbnailUrl: row.thumbnail_url ?? undefined,
     isPublic: row.is_public,
     shareSlug: row.share_slug,
     createdAt: row.created_at,
@@ -101,4 +103,49 @@ export async function updateTrip(tripId: string, values: TripFormValues): Promis
 export async function deleteTrip(tripId: string): Promise<void> {
   const { error } = await supabase.from("trips").delete().eq("id", tripId);
   if (error) throw error;
+}
+
+const THUMBNAIL_BUCKET = "trip-thumbnails";
+
+function thumbnailPath(tripId: string): string {
+  return `${tripId}/thumbnail`;
+}
+
+export async function uploadTripThumbnail(tripId: string, file: File): Promise<Trip> {
+  const path = thumbnailPath(tripId);
+  const { error: uploadError } = await supabase.storage
+    .from(THUMBNAIL_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (uploadError) throw uploadError;
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(THUMBNAIL_BUCKET).getPublicUrl(path);
+
+  const { data, error } = await supabase
+    .from("trips")
+    .update({ thumbnail_url: publicUrl })
+    .eq("id", tripId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapTripRowToTrip(data as TripRow);
+}
+
+export async function removeTripThumbnail(tripId: string): Promise<Trip> {
+  const { error: removeError } = await supabase.storage
+    .from(THUMBNAIL_BUCKET)
+    .remove([thumbnailPath(tripId)]);
+  if (removeError) throw removeError;
+
+  const { data, error } = await supabase
+    .from("trips")
+    .update({ thumbnail_url: null })
+    .eq("id", tripId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapTripRowToTrip(data as TripRow);
 }

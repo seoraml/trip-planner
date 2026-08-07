@@ -31,13 +31,43 @@ export function ensureAnonymousSession(): Promise<Session> {
 
 export type SessionStatus = "loading" | "ready" | "error";
 
+// Supabase reports this failure via URL params on the redirect *back* from
+// Google, not as a return value from the call that started the redirect — so
+// it can only be caught here, at app load, not inside signInWithGoogle().
+// Happens when linkIdentity() targets a Google account that's already the
+// primary identity of a different (earlier) anonymous session in this browser.
+function consumeGoogleLinkConflict(): boolean {
+  const params = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const errorCode = params.get("error_code") ?? hashParams.get("error_code");
+  if (errorCode !== "identity_already_exists") return false;
+  window.history.replaceState(null, "", window.location.pathname);
+  return true;
+}
+
 export function useAnonymousSession() {
   const [status, setStatus] = useState<SessionStatus>("loading");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    ensureAnonymousSession()
+
+    async function bootstrap() {
+      if (consumeGoogleLinkConflict()) {
+        // The account this browser was trying to link to already belongs to
+        // someone (the same person, from an earlier session) — sign in to it
+        // directly instead. This redirects again; nothing after this runs.
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: window.location.origin },
+        });
+        if (error) throw error;
+        return;
+      }
+      await ensureAnonymousSession();
+    }
+
+    bootstrap()
       .then(() => {
         if (!cancelled) setStatus("ready");
       })
@@ -115,10 +145,16 @@ export async function signInWithGoogle(): Promise<void> {
   const session = await ensureAnonymousSession();
   const redirectTo = window.location.origin;
 
-  const { error } = session.user.is_anonymous
-    ? await supabase.auth.linkIdentity({ provider: "google", options: { redirectTo } })
-    : await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
+  if (session.user.is_anonymous) {
+    const { error } = await supabase.auth.linkIdentity({ provider: "google", options: { redirectTo } });
+    if (!error) return;
+    // This browser's anonymous account is a dead end (its Google identity was
+    // already claimed by a different account in an earlier session) — fall
+    // back to a normal sign-in, which resolves to that existing account.
+    if (error.code !== "identity_already_exists") throw error;
+  }
 
+  const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
   if (error) throw error;
 }
 

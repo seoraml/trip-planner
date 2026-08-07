@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { ChevronDown, ChevronUp, GripVertical, Pencil, X } from "lucide-react";
+import { Fragment, useState } from "react";
+import { ChevronDown, ChevronUp, Footprints, GripVertical, Pencil, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PLACE_CATEGORY_ICON_STYLES, PLACE_CATEGORY_ICONS } from "@/features/plc/placeCategoryStyles";
+import type { RouteLeg } from "@/lib/map/MapProvider";
 import type { ItineraryItem, Place } from "@/types/domain";
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
   onEditItem: (itemId: string) => void;
   onDeleteItem: (itemId: string) => void;
   onReorder: (orderedItemIds: string[]) => void;
+  routeLegs?: RouteLeg[];
 }
 
 export function DayItineraryList({
@@ -25,6 +27,7 @@ export function DayItineraryList({
   onEditItem,
   onDeleteItem,
   onReorder,
+  routeLegs,
 }: Props) {
   const [dragId, setDragId] = useState<string | null>(null);
 
@@ -63,9 +66,10 @@ export function DayItineraryList({
         const place = placesById.get(item.placeId);
         const isSelected = item.id === selectedItemId;
         const CategoryIcon = place ? PLACE_CATEGORY_ICONS[place.category] : undefined;
+        const leg = routeLegs?.[index];
         return (
+          <Fragment key={item.id}>
           <li
-            key={item.id}
             draggable={!readOnly}
             onDragStart={() => setDragId(item.id)}
             onDragOver={(event) => event.preventDefault()}
@@ -168,6 +172,13 @@ export function DayItineraryList({
               )}
             </Card>
           </li>
+          {leg && index < items.length - 1 && (
+            <li className="flex items-center gap-1.5 py-0.5 pl-4 text-xs text-muted-foreground">
+              <Footprints className="size-3.5 shrink-0" />
+              {leg.durationText} · {leg.distanceText}
+            </li>
+          )}
+          </Fragment>
         );
       })}
     </ul>

@@ -20,14 +20,25 @@ export interface PlaceSearchResult {
   position: LatLng;
 }
 
+export type TravelMode = "WALKING" | "DRIVING";
+
+export interface RouteLeg {
+  durationText: string;
+  distanceText: string;
+}
+
+export interface RouteResult {
+  legs: RouteLeg[]; // legs[i] = travel from points[i] to points[i+1]
+}
+
 export interface MapProvider {
   init(container: HTMLElement, opts: { center: LatLng; zoom: number }): Promise<void>;
   searchPlace(query: string): Promise<PlaceSearchResult[]>;
   renderMarkers(markers: MapMarker[]): void;
   clearMarkers(): void;
   onMarkerClick(handler: (markerId: string) => void): () => void;
-  renderPolyline(points: LatLng[]): void; // naive point-to-point line, not real routing
-  clearPolyline(): void;
+  renderRoute(points: LatLng[], mode: TravelMode): Promise<RouteResult | null>; // null if <2 points
+  clearRoute(): void;
   onMapClick(handler: (pos: LatLng) => void): () => void;
   panTo(pos: LatLng): void;
   destroy(): void;

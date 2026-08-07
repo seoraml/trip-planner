@@ -1,5 +1,12 @@
 import { PLACE_CATEGORY_HEX } from "@/features/plc/placeCategoryStyles";
-import type { LatLng, MapMarker, MapProvider, PlaceSearchResult } from "./MapProvider";
+import type {
+  LatLng,
+  MapMarker,
+  MapProvider,
+  PlaceSearchResult,
+  RouteResult,
+  TravelMode,
+} from "./MapProvider";
 import { loadGoogleMaps } from "./loadGoogleMaps";
 
 const DEFAULT_MARKER_COLOR = "#2563EB"; // primary
@@ -8,8 +15,9 @@ const SELECTED_STROKE_COLOR = "#14B8A6"; // accent
 export function createGoogleMapProvider(apiKey: string): MapProvider {
   let map: google.maps.Map | null = null;
   let markers: google.maps.Marker[] = [];
-  let polyline: google.maps.Polyline | null = null;
   let placesService: google.maps.places.PlacesService | null = null;
+  let directionsService: google.maps.DirectionsService | null = null;
+  let directionsRenderer: google.maps.DirectionsRenderer | null = null;
   let clickListener: google.maps.MapsEventListener | null = null;
   let markerClickHandler: ((markerId: string) => void) | null = null;
 
@@ -101,22 +109,47 @@ export function createGoogleMapProvider(apiKey: string): MapProvider {
       };
     },
 
-    renderPolyline(points: LatLng[]) {
-      polyline?.setMap(null);
-      polyline = null;
-      if (!map || points.length < 2) return;
-      polyline = new google.maps.Polyline({
-        path: points,
-        strokeColor: "#2563EB",
-        strokeOpacity: 0.8,
-        strokeWeight: 4,
+    async renderRoute(points: LatLng[], mode: TravelMode): Promise<RouteResult | null> {
+      if (!map || points.length < 2) {
+        directionsRenderer?.setMap(null);
+        directionsRenderer = null;
+        return null;
+      }
+
+      if (!directionsService) directionsService = new google.maps.DirectionsService();
+      if (!directionsRenderer) {
+        directionsRenderer = new google.maps.DirectionsRenderer({
+          suppressMarkers: true, // we render our own numbered markers
+          preserveViewport: true, // don't fight our own panTo/center logic
+          polylineOptions: { strokeColor: "#2563EB", strokeOpacity: 0.8, strokeWeight: 4 },
+        });
+      }
+      directionsRenderer.setMap(map);
+
+      const [origin, destination] = [points[0], points[points.length - 1]];
+      const waypoints = points.slice(1, -1).map((position) => ({ location: position, stopover: true }));
+
+      const result = await directionsService.route({
+        origin,
+        destination,
+        waypoints,
+        travelMode: google.maps.TravelMode[mode],
       });
-      polyline.setMap(map);
+
+      directionsRenderer.setDirections(result);
+
+      const legs = result.routes[0]?.legs ?? [];
+      return {
+        legs: legs.map((leg) => ({
+          durationText: leg.duration?.text ?? "",
+          distanceText: leg.distance?.text ?? "",
+        })),
+      };
     },
 
-    clearPolyline() {
-      polyline?.setMap(null);
-      polyline = null;
+    clearRoute() {
+      directionsRenderer?.setMap(null);
+      directionsRenderer = null;
     },
 
     onMapClick(handler: (pos: LatLng) => void) {
@@ -137,8 +170,8 @@ export function createGoogleMapProvider(apiKey: string): MapProvider {
     destroy() {
       markers.forEach((marker) => marker.setMap(null));
       markers = [];
-      polyline?.setMap(null);
-      polyline = null;
+      directionsRenderer?.setMap(null);
+      directionsRenderer = null;
       clickListener?.remove();
       markerClickHandler = null;
       map = null;

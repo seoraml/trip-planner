@@ -19,7 +19,15 @@ export function TripCard({ trip, itemCount, onDelete }: Props) {
         size="sm"
         className="h-full gap-0 py-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
       >
-        <div className={`h-20 w-full ${getTripAccentColor(trip.country)}`} />
+        {trip.thumbnailUrl ? (
+          <img
+            src={`${trip.thumbnailUrl}?t=${trip.updatedAt}`}
+            alt=""
+            className="h-20 w-full object-cover"
+          />
+        ) : (
+          <div className={`h-20 w-full ${getTripAccentColor(trip.country)}`} />
+        )}
         <CardHeader className="pt-4">
           <CardTitle className="text-base">{trip.title}</CardTitle>
           <CardDescription className="flex items-center gap-1">

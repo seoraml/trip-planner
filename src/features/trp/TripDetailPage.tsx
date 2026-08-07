@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useCurrentUserId } from "@/lib/auth";
 import { createGoogleMapProvider } from "@/lib/map/googleMapProvider";
 import { isGoogleMapsConfigured, googleMapsApiKey } from "@/lib/map/googleConfig";
-import type { MapMarker, MapProvider, PlaceSearchResult } from "@/lib/map/MapProvider";
+import type { MapMarker, MapProvider, PlaceSearchResult, RouteLeg, TravelMode } from "@/lib/map/MapProvider";
 import { usePlaces } from "@/features/plc/usePlaces";
 import { MapView } from "@/features/plc/MapView";
 import { PlaceSearchPanel } from "@/features/plc/PlaceSearchPanel";
@@ -25,7 +25,14 @@ const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 }; // 서울시청, 장소�
 export function TripDetailPage() {
   const { shareSlug } = useParams<{ shareSlug: string }>();
   const navigate = useNavigate();
-  const { trip, status: tripStatus, error: tripError, editTrip } = useTrip(shareSlug);
+  const {
+    trip,
+    status: tripStatus,
+    error: tripError,
+    editTrip,
+    changeThumbnail,
+    removeThumbnail,
+  } = useTrip(shareSlug);
   const currentUserId = useCurrentUserId();
 
   const { places, status: placesStatus, error: placesError, addPlace } = usePlaces(trip?.id);
@@ -46,6 +53,10 @@ export function TripDetailPage() {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isEditTripOpen, setIsEditTripOpen] = useState(false);
   const [isDeletingTrip, setIsDeletingTrip] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
+  const [travelModeByDate, setTravelModeByDate] = useState<Record<string, TravelMode>>({});
+  const [routeLegs, setRouteLegs] = useState<RouteLeg[]>([]);
+  const [routeError, setRouteError] = useState<string | null>(null);
 
   const [provider] = useState<MapProvider | null>(() =>
     isGoogleMapsConfigured ? createGoogleMapProvider(googleMapsApiKey) : null
@@ -56,6 +67,7 @@ export function TripDetailPage() {
   const placesById = useMemo(() => new Map(places.map((place) => [place.id, place])), [places]);
   const activeDate = selectedDate ?? days[0]?.date ?? null;
   const activeDay = days.find((day) => day.date === activeDate);
+  const travelMode: TravelMode = (activeDate && travelModeByDate[activeDate]) || "WALKING";
 
   const selectedPlaceId = useMemo(() => {
     const item = activeDay?.items.find((i) => i.id === selectedItemId);
@@ -80,14 +92,34 @@ export function TripDetailPage() {
       .map((marker, index) => ({ ...marker, order: index + 1 }));
   }, [activeDay, placesById, selectedPlaceId]);
 
-  const polylinePoints = useMemo(() => markers.map((marker) => marker.position), [markers]);
   const firstPlace = places[0];
   const mapCenter =
     markers[0]?.position ?? (firstPlace ? { lat: firstPlace.lat, lng: firstPlace.lng } : DEFAULT_CENTER);
 
+  useEffect(() => {
+    if (!mapReady || !provider) return;
+    provider.renderMarkers(markers);
+    setRouteError(null);
+    provider
+      .renderRoute(
+        markers.map((marker) => marker.position),
+        travelMode
+      )
+      .then((result) => setRouteLegs(result?.legs ?? []))
+      .catch(() => {
+        setRouteLegs([]);
+        setRouteError("이동 경로를 불러오지 못했습니다.");
+      });
+  }, [mapReady, provider, markers, travelMode]);
+
   function handleSelectDate(date: string) {
     setSelectedDate(date);
     setSelectedItemId(null);
+  }
+
+  function handleChangeTravelMode(mode: TravelMode) {
+    if (!activeDate) return;
+    setTravelModeByDate((prev) => ({ ...prev, [activeDate]: mode }));
   }
 
   function handleSelectItem(itemId: string) {
@@ -224,7 +256,7 @@ export function TripDetailPage() {
 
       <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
         <div className="order-1 h-72 shrink-0 lg:order-2 lg:h-auto lg:flex-1">
-          <MapView provider={provider} center={mapCenter} markers={markers} polylinePoints={polylinePoints} />
+          <MapView provider={provider} center={mapCenter} onReady={() => setMapReady(true)} />
         </div>
 
         <section className="order-2 flex flex-col gap-4 overflow-y-auto p-4 sm:p-6 lg:order-1 lg:w-[420px] lg:shrink-0 lg:border-r lg:border-border/60">
@@ -251,6 +283,10 @@ export function TripDetailPage() {
             onAddPlace={addPlace}
             onAddItem={addItem}
             onReorderDay={reorderDay}
+            travelMode={travelMode}
+            onChangeTravelMode={handleChangeTravelMode}
+            routeLegs={routeLegs}
+            routeError={routeError}
           />
         </section>
       </div>
@@ -267,6 +303,8 @@ export function TripDetailPage() {
         open={isEditTripOpen}
         onOpenChange={setIsEditTripOpen}
         onSubmit={editTrip}
+        onChangeThumbnail={changeThumbnail}
+        onRemoveThumbnail={removeThumbnail}
       />
 
       {editingItem && (

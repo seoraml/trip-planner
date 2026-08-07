@@ -20,6 +20,7 @@ export interface Trip {
   startDate: ISODateString;
   endDate: ISODateString;
   description?: string;
+  thumbnailUrl?: string;
   isPublic: boolean;
   shareSlug: string;
   createdAt: ISODateTimeString;
