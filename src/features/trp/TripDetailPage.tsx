@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, MapPin, Pencil, Share2, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarDays, LocateFixed, MapPin, Pencil, Share2, Trash2 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { useAuthState } from "@/lib/auth";
@@ -60,6 +60,7 @@ export function TripDetailPage() {
   const [travelModeByDate, setTravelModeByDate] = useState<Record<string, TravelMode>>({});
   const [routeLegs, setRouteLegs] = useState<(RouteLeg | null)[]>([]);
   const [routeError, setRouteError] = useState<string | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
 
   const [provider] = useState<MapProvider | null>(() =>
     isGoogleMapsConfigured ? createGoogleMapProvider(googleMapsApiKey) : null
@@ -132,6 +133,26 @@ export function TripDetailPage() {
     const item = activeDay?.items.find((i) => i.id === itemId);
     const place = item ? placesById.get(item.placeId) : undefined;
     if (place) provider?.panTo({ lat: place.lat, lng: place.lng }, 15);
+  }
+
+  function handleLocateMe() {
+    if (!navigator.geolocation) {
+      window.alert("이 브라우저에서는 위치 정보를 지원하지 않아요.");
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
+        provider?.renderCurrentLocation(pos);
+        provider?.panTo(pos, 15);
+        setIsLocating(false);
+      },
+      () => {
+        window.alert("위치 정보를 가져오지 못했어요. 위치 권한을 확인해주세요.");
+        setIsLocating(false);
+      }
+    );
   }
 
   useEffect(() => {
@@ -270,8 +291,21 @@ export function TripDetailPage() {
       </header>
 
       <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
-        <div className="order-1 h-72 shrink-0 lg:order-2 lg:h-auto lg:flex-1">
+        <div className="relative order-1 h-72 shrink-0 lg:order-2 lg:h-auto lg:flex-1">
           <MapView provider={provider} center={mapCenter} onReady={() => setMapReady(true)} />
+          {mapReady && (
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              aria-label="현재 위치로 이동"
+              disabled={isLocating}
+              onClick={handleLocateMe}
+              className="absolute right-3 bottom-3 z-10 bg-card shadow-md"
+            >
+              <LocateFixed className={isLocating ? "animate-spin" : undefined} />
+            </Button>
+          )}
         </div>
 
         <section className="order-2 flex flex-col gap-4 overflow-y-auto p-4 sm:p-6 lg:order-1 lg:w-[420px] lg:shrink-0 lg:border-r lg:border-border/60">

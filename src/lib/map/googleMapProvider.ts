@@ -20,6 +20,7 @@ export function createGoogleMapProvider(apiKey: string): MapProvider {
   let routeRenderers: google.maps.DirectionsRenderer[] = [];
   let clickListener: google.maps.MapsEventListener | null = null;
   let markerClickHandler: ((markerId: string) => void) | null = null;
+  let currentLocationMarker: google.maps.Marker | null = null;
 
   const markerIcon = (m: MapMarker): google.maps.Symbol => ({
     path: google.maps.SymbolPath.CIRCLE,
@@ -171,11 +172,35 @@ export function createGoogleMapProvider(apiKey: string): MapProvider {
       if (zoom !== undefined) map?.setZoom(zoom);
     },
 
+    // Purely visual, never sent anywhere or stored — the marker only lives in
+    // this browser's map instance for as long as the page is open.
+    renderCurrentLocation(pos: LatLng | null) {
+      currentLocationMarker?.setMap(null);
+      currentLocationMarker = null;
+      if (!pos || !map) return;
+      currentLocationMarker = new google.maps.Marker({
+        position: pos,
+        map,
+        title: "현재 위치",
+        zIndex: 1000,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: "#4285F4",
+          fillOpacity: 1,
+          strokeColor: "#ffffff",
+          strokeWeight: 3,
+        },
+      });
+    },
+
     destroy() {
       markers.forEach((marker) => marker.setMap(null));
       markers = [];
       routeRenderers.forEach((renderer) => renderer.setMap(null));
       routeRenderers = [];
+      currentLocationMarker?.setMap(null);
+      currentLocationMarker = null;
       clickListener?.remove();
       markerClickHandler = null;
       map = null;

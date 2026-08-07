@@ -44,5 +44,6 @@ export interface MapProvider {
   clearRoute(): void;
   onMapClick(handler: (pos: LatLng) => void): () => void;
   panTo(pos: LatLng, zoom?: number): void;
+  renderCurrentLocation(pos: LatLng | null): void; // null clears it, never persisted anywhere
   destroy(): void;
 }
