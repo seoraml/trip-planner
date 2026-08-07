@@ -1,21 +1,11 @@
-import { useState } from "react";
 import { LogIn, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuthState, signInWithGoogle, signOut } from "@/lib/auth";
+import { useAuthState, signOut } from "@/lib/auth";
+import { useGoogleSignIn } from "./useGoogleSignIn";
 
 export function AccountMenu() {
   const { isAnonymous, email } = useAuthState();
-  const [isSigningIn, setIsSigningIn] = useState(false);
-
-  async function handleSignIn() {
-    setIsSigningIn(true);
-    try {
-      await signInWithGoogle();
-    } catch (err) {
-      window.alert(err instanceof Error ? err.message : "로그인에 실패했습니다.");
-      setIsSigningIn(false);
-    }
-  }
+  const { signIn, isSigningIn } = useGoogleSignIn();
 
   function handleSignOut() {
     if (!window.confirm("로그아웃할까요?")) return;
@@ -24,7 +14,7 @@ export function AccountMenu() {
 
   if (isAnonymous) {
     return (
-      <Button variant="outline" size="sm" onClick={handleSignIn} disabled={isSigningIn}>
+      <Button variant="outline" size="sm" onClick={signIn} disabled={isSigningIn}>
         <LogIn />
         {isSigningIn ? "이동 중..." : "Google로 로그인"}
       </Button>

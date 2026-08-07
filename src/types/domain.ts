@@ -22,6 +22,7 @@ export interface Trip {
   description?: string;
   thumbnailUrl?: string;
   isPublic: boolean;
+  linkEditable: boolean;
   shareSlug: string;
   createdAt: ISODateTimeString;
   updatedAt: ISODateTimeString;
@@ -55,4 +56,36 @@ export interface TripDay {
   date: ISODateString;
   dayNumber: number;
   items: ItineraryItem[];
+}
+
+export interface TripMember {
+  id: UUID;
+  tripId: UUID;
+  name: string;
+  createdAt: ISODateTimeString;
+}
+
+export interface BudgetCategoryPlan {
+  tripId: UUID;
+  category: PlaceCategory;
+  plannedAmount: number;
+}
+
+export interface Expense {
+  id: UUID;
+  tripId: UUID;
+  category: PlaceCategory;
+  amount: number;
+  memo?: string;
+  paidBy: UUID | null;
+  splitMemberIds: UUID[];
+  expenseDate?: ISODateString;
+  createdAt: ISODateTimeString;
+}
+
+// Derived client-side only, never persisted
+export interface SettlementTransfer {
+  fromMemberId: UUID;
+  toMemberId: UUID;
+  amount: number;
 }

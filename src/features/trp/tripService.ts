@@ -14,6 +14,7 @@ interface TripRow {
   description: string | null;
   thumbnail_url: string | null;
   is_public: boolean;
+  link_editable: boolean;
   share_slug: string;
   created_at: string;
   updated_at: string;
@@ -31,6 +32,7 @@ function mapTripRowToTrip(row: TripRow): Trip {
     description: row.description ?? undefined,
     thumbnailUrl: row.thumbnail_url ?? undefined,
     isPublic: row.is_public,
+    linkEditable: row.link_editable,
     shareSlug: row.share_slug,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -95,6 +97,18 @@ export async function updateTrip(tripId: string, values: TripFormValues): Promis
       end_date: values.endDate,
       description: values.description.trim() || null,
     })
+    .eq("id", tripId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapTripRowToTrip(data as TripRow);
+}
+
+export async function updateTripLinkEditable(tripId: string, enabled: boolean): Promise<Trip> {
+  const { data, error } = await supabase
+    .from("trips")
+    .update({ link_editable: enabled })
     .eq("id", tripId)
     .select()
     .single();

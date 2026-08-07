@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import type { Trip } from "@/types/domain";
 import type { TripFormValues } from "./tripFormValidation";
-import { getTripByShareSlug, removeTripThumbnail, updateTrip, uploadTripThumbnail } from "./tripService";
+import {
+  getTripByShareSlug,
+  removeTripThumbnail,
+  updateTrip,
+  updateTripLinkEditable,
+  uploadTripThumbnail,
+} from "./tripService";
 
 export type TripLoadStatus = "loading" | "ready" | "not-found" | "error";
 
@@ -54,5 +60,11 @@ export function useTrip(shareSlug: string | undefined) {
     setTrip(updated);
   }
 
-  return { trip, status, error, editTrip, changeThumbnail, removeThumbnail };
+  async function setLinkEditable(enabled: boolean): Promise<void> {
+    if (!trip) throw new Error("여행 정보가 없습니다.");
+    const updated = await updateTripLinkEditable(trip.id, enabled);
+    setTrip(updated);
+  }
+
+  return { trip, status, error, editTrip, changeThumbnail, removeThumbnail, setLinkEditable };
 }

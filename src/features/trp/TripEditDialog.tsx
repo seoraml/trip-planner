@@ -96,6 +96,7 @@ export function TripEditDialog({
   }
 
   async function handleThumbnailRemove() {
+    if (!window.confirm("사진을 삭제할까요?")) return;
     setThumbnailError(null);
     setIsThumbnailBusy(true);
     try {

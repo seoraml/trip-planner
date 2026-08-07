@@ -65,6 +65,11 @@ export function useAnonymousSession() {
         return;
       }
       await ensureAnonymousSession();
+      // linkIdentity() links the Google identity server-side, but the access
+      // token already cached in this browser was minted *before* the link and
+      // still carries the old "anonymous" claim. Refresh once on boot so
+      // is_anonymous reflects reality without requiring a second login click.
+      await supabase.auth.refreshSession().catch(() => {});
     }
 
     bootstrap()

@@ -16,10 +16,33 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   url: string;
   tripTitle: string;
+  isOwner: boolean;
+  linkEditable: boolean;
+  onToggleLinkEditable: (enabled: boolean) => Promise<void>;
 }
 
-export function ShareDialog({ open, onOpenChange, url, tripTitle }: Props) {
+export function ShareDialog({
+  open,
+  onOpenChange,
+  url,
+  tripTitle,
+  isOwner,
+  linkEditable,
+  onToggleLinkEditable,
+}: Props) {
   const [copied, setCopied] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
+
+  async function handleToggle() {
+    setIsToggling(true);
+    try {
+      await onToggleLinkEditable(!linkEditable);
+    } catch {
+      window.alert("설정을 변경하지 못했습니다.");
+    } finally {
+      setIsToggling(false);
+    }
+  }
 
   async function handleCopy() {
     try {
@@ -63,6 +86,33 @@ export function ShareDialog({ open, onOpenChange, url, tripTitle }: Props) {
               {copied ? <Check className="text-success" /> : <Copy />}
             </Button>
           </div>
+
+          {isOwner && (
+            <button
+              type="button"
+              onClick={handleToggle}
+              disabled={isToggling}
+              className="flex w-full items-center justify-between gap-3 rounded-xl border border-border p-3 text-left"
+            >
+              <span className="text-sm text-foreground">
+                링크로 들어온 로그인 사용자도 편집 가능
+              </span>
+              <span
+                aria-hidden="true"
+                className={
+                  "relative h-5 w-9 shrink-0 rounded-full transition-colors " +
+                  (linkEditable ? "bg-primary" : "bg-muted")
+                }
+              >
+                <span
+                  className={
+                    "absolute top-0.5 size-4 rounded-full bg-white shadow transition-transform " +
+                    (linkEditable ? "translate-x-4.5" : "translate-x-0.5")
+                  }
+                />
+              </span>
+            </button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

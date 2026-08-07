@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarDays, MapPin, Pencil, Share2, Trash2 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Button } from "@/components/ui/button";
-import { useCurrentUserId } from "@/lib/auth";
+import { useAuthState } from "@/lib/auth";
 import { createGoogleMapProvider } from "@/lib/map/googleMapProvider";
 import { isGoogleMapsConfigured, googleMapsApiKey } from "@/lib/map/googleConfig";
 import type { MapMarker, MapProvider, PlaceSearchResult, RouteLeg, TravelMode } from "@/lib/map/MapProvider";
@@ -12,6 +12,7 @@ import { PlaceSearchPanel } from "@/features/plc/PlaceSearchPanel";
 import { ItineraryPanel } from "@/features/itn/ItineraryPanel";
 import { EditItineraryItemDialog } from "@/features/itn/EditItineraryItemDialog";
 import { useItinerary } from "@/features/itn/useItinerary";
+import { BudgetPanel } from "@/features/bgt/BudgetPanel";
 import { useTrip } from "./useTrip";
 import { formatDateRange } from "./formatDateRange";
 import { formatTripDuration } from "./tripDuration";
@@ -32,8 +33,9 @@ export function TripDetailPage() {
     editTrip,
     changeThumbnail,
     removeThumbnail,
+    setLinkEditable,
   } = useTrip(shareSlug);
-  const currentUserId = useCurrentUserId();
+  const { userId: currentUserId, isAnonymous } = useAuthState();
 
   const { places, status: placesStatus, error: placesError, addPlace } = usePlaces(trip?.id);
   const {
@@ -53,6 +55,7 @@ export function TripDetailPage() {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isEditTripOpen, setIsEditTripOpen] = useState(false);
   const [isDeletingTrip, setIsDeletingTrip] = useState(false);
+  const [activeTab, setActiveTab] = useState<"itinerary" | "budget">("itinerary");
   const [mapReady, setMapReady] = useState(false);
   const [travelModeByDate, setTravelModeByDate] = useState<Record<string, TravelMode>>({});
   const [routeLegs, setRouteLegs] = useState<RouteLeg[]>([]);
@@ -62,7 +65,9 @@ export function TripDetailPage() {
     isGoogleMapsConfigured ? createGoogleMapProvider(googleMapsApiKey) : null
   );
 
-  const readOnly = !trip || !currentUserId || trip.ownerId !== currentUserId;
+  const isOwner = !!trip && !!currentUserId && trip.ownerId === currentUserId;
+  const canEditContent = isOwner || (!!trip?.linkEditable && !isAnonymous);
+  const readOnly = !canEditContent;
 
   const placesById = useMemo(() => new Map(places.map((place) => [place.id, place])), [places]);
   const activeDate = selectedDate ?? days[0]?.date ?? null;
@@ -227,7 +232,7 @@ export function TripDetailPage() {
               <Share2 />
               공유
             </Button>
-            {!readOnly && (
+            {isOwner && (
               <>
                 <Button variant="outline" size="sm" onClick={() => setIsEditTripOpen(true)}>
                   <Pencil />
@@ -252,6 +257,11 @@ export function TripDetailPage() {
             읽기 전용으로 보고 있습니다 · 이 여행을 만든 사람만 일정을 수정할 수 있습니다
           </p>
         )}
+        {canEditContent && !isOwner && (
+          <p className="mt-3 w-fit rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground">
+            공유받아 편집하고 있습니다 · 여행 삭제와 기본 정보 수정은 만든 사람만 가능합니다
+          </p>
+        )}
       </header>
 
       <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
@@ -260,34 +270,63 @@ export function TripDetailPage() {
         </div>
 
         <section className="order-2 flex flex-col gap-4 overflow-y-auto p-4 sm:p-6 lg:order-1 lg:w-[420px] lg:shrink-0 lg:border-r lg:border-border/60">
-          {itineraryStatus === "error" && <p className="text-sm text-destructive">{itineraryError}</p>}
-          {placesStatus === "error" && <p className="text-sm text-destructive">{placesError}</p>}
-          {!readOnly && (
+          <div className="flex gap-0.5 rounded-[10px] bg-muted p-0.5">
+            {(
+              [
+                ["itinerary", "일정"],
+                ["budget", "예산"],
+              ] as const
+            ).map(([tab, label]) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={
+                  "flex-1 rounded-[8px] px-3 py-1.5 text-sm font-medium transition-colors " +
+                  (tab === activeTab
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground")
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {activeTab === "itinerary" ? (
             <>
-              <PlaceSearchPanel provider={provider} onSelect={handleSearchSelect} />
-              {searchNotice && <p className="text-sm text-accent">{searchNotice}</p>}
+              {itineraryStatus === "error" && <p className="text-sm text-destructive">{itineraryError}</p>}
+              {placesStatus === "error" && <p className="text-sm text-destructive">{placesError}</p>}
+              {!readOnly && (
+                <>
+                  <PlaceSearchPanel provider={provider} onSelect={handleSearchSelect} />
+                  {searchNotice && <p className="text-sm text-accent">{searchNotice}</p>}
+                </>
+              )}
+              <ItineraryPanel
+                days={days}
+                places={places}
+                status={itineraryStatus}
+                error={itineraryError}
+                readOnly={readOnly}
+                selectedDate={activeDate}
+                onSelectDate={handleSelectDate}
+                selectedItemId={selectedItemId}
+                onSelectItem={handleSelectItem}
+                onEditItem={setEditingItemId}
+                onDeleteItem={handleDeleteItem}
+                onAddPlace={addPlace}
+                onAddItem={addItem}
+                onReorderDay={reorderDay}
+                travelMode={travelMode}
+                onChangeTravelMode={handleChangeTravelMode}
+                routeLegs={routeLegs}
+                routeError={routeError}
+              />
             </>
+          ) : (
+            <BudgetPanel tripId={trip.id} readOnly={readOnly} />
           )}
-          <ItineraryPanel
-            days={days}
-            places={places}
-            status={itineraryStatus}
-            error={itineraryError}
-            readOnly={readOnly}
-            selectedDate={activeDate}
-            onSelectDate={handleSelectDate}
-            selectedItemId={selectedItemId}
-            onSelectItem={handleSelectItem}
-            onEditItem={setEditingItemId}
-            onDeleteItem={handleDeleteItem}
-            onAddPlace={addPlace}
-            onAddItem={addItem}
-            onReorderDay={reorderDay}
-            travelMode={travelMode}
-            onChangeTravelMode={handleChangeTravelMode}
-            routeLegs={routeLegs}
-            routeError={routeError}
-          />
         </section>
       </div>
 
@@ -296,6 +335,9 @@ export function TripDetailPage() {
         onOpenChange={setIsShareOpen}
         url={typeof window !== "undefined" ? window.location.href : ""}
         tripTitle={trip.title}
+        isOwner={isOwner}
+        linkEditable={trip.linkEditable}
+        onToggleLinkEditable={setLinkEditable}
       />
 
       <TripEditDialog
