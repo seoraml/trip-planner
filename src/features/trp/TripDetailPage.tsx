@@ -15,7 +15,7 @@ import { useItinerary } from "@/features/itn/useItinerary";
 import { BudgetPanel } from "@/features/bgt/BudgetPanel";
 import { useTrip } from "./useTrip";
 import { formatDateRange } from "./formatDateRange";
-import { formatTripDuration } from "./tripDuration";
+import { formatDday, formatTripDuration } from "./tripDuration";
 import { deleteTrip } from "./tripService";
 import { ShareDialog } from "./ShareDialog";
 import { TripEditDialog } from "./TripEditDialog";
@@ -211,8 +211,13 @@ export function TripDetailPage() {
         </div>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
               {trip.title}
+              {formatDday(trip.startDate, trip.endDate) && (
+                <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-sm font-semibold text-primary">
+                  {formatDday(trip.startDate, trip.endDate)}
+                </span>
+              )}
             </h1>
             <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">

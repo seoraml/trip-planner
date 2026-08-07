@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction }
 import { Button } from "@/components/ui/button";
 import type { Trip } from "@/types/domain";
 import { formatDateRange } from "./formatDateRange";
-import { formatTripDuration, getTripAccentColor } from "./tripDuration";
+import { formatDday, formatTripDuration, getTripAccentColor } from "./tripDuration";
 
 interface Props {
   trip: Trip;
@@ -29,7 +29,14 @@ export function TripCard({ trip, itemCount, onDelete }: Props) {
           <div className={`h-20 w-full ${getTripAccentColor(trip.country)}`} />
         )}
         <CardHeader className="pt-4">
-          <CardTitle className="text-base">{trip.title}</CardTitle>
+          <CardTitle className="flex flex-wrap items-center gap-1.5 text-base">
+            {trip.title}
+            {formatDday(trip.startDate, trip.endDate) && (
+              <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
+                {formatDday(trip.startDate, trip.endDate)}
+              </span>
+            )}
+          </CardTitle>
           <CardDescription className="flex items-center gap-1">
             <MapPin className="size-3.5" />
             {trip.country} · {trip.city}
